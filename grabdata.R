@@ -97,3 +97,51 @@ slope_sum=summary(terrain(mydem, opt='slope',unit = "radians"))
 # We are building on our prior lab solutions, need to build out our previous 
 # TMWB model. We will grab functions from the solutions from Week 4’s Lab  
 # Lab05
+
+modeldata$HillslopeAboveExcess=0
+BasinTMWB=modeldata
+BasinTMWB = TMWB_Model(fnc_TMWB = BasinTMWB,fnc_slope=0, 
+                       fnc_aspect=0,func_DAWC=.3,
+                       func_z=500,fnc_fcres=.3)
+attach(BasinTMWB)
+plot(date,AW)
+plot(dP,Qmm)
+detach(BasinTMWB)
+BasinTMWB_JO=BasinTMWB[(month(BasinTMWB$date) > 5 
+                        & month(BasinTMWB$date) < 11),]
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+detach(BasinTMWB_JO)
+
+(1000/85-10)*25.4   # our CN estimate in bold
+(1000/50-10)*25.4   # our CN estimate in bold
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
+points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
+
+NSE=function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2, na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}
+NSE(Qmm,dP^2/(dP+260))
+NSE(Qmm,dP^2/(dP+45))
+for (myS in 50:350){
+  print(paste(myS,NSE(Qmm,dP^2/(dP+myS))))
+}
+Sest = 157
+
+plot(dP,Qmm)
+points(dP,dP^2/(dP+Sest),col="green") 
+
+nTIclass=5
+VSAsol=data.table(WetClass=seq(from=nTIclass,to=1),
+                  As=seq(1:nTIclass)*(1/nTIclass),Wetfrac=(1/nTIclass))
+VSAsol[,sSratio:=2*(sqrt(1-shift(As))-sqrt(1-As))/Wetfrac-1]
+VSAsol$sSratio[1]=2*(sqrt(1-0)-sqrt(1-VSAsol$As[1]))/VSAsol$Wetfrac[1]-1
+VSAsol[,sigma:=Sest*sSratio]
+VSAsol[,CN:=25400/(sigma+254)]
+VSAsol
+plot(VSAsol$As,VSAsol$sigma)
+lines(VSAsol$As,VSAsol$sigma)
+plot(VSAsol$As,VSAsol$CN)
+lines(VSAsol$As,VSAsol$CN)
